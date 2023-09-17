@@ -7,6 +7,7 @@ https://os.phil-opp.com/
 ## Quickstart
 
 ```bash
-rustup target add thumbv7em-none-eabihf
-cargo build --target thumbv7em-none-eabihf
+rustup override set nightly
+rustup component add rust-src --toolchain nightly-aarch64-apple-darwin
+cargo build --target x86_64-toy_os.json
 ```
