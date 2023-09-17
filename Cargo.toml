@@ -1,0 +1,9 @@
+[package]
+name = "toy_os"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[profile.dev]
+panic = "abort"
