@@ -9,5 +9,9 @@ https://os.phil-opp.com/
 ```bash
 rustup override set nightly
 rustup component add rust-src --toolchain nightly-aarch64-apple-darwin
-cargo build
+
+cargo install bootimage
+rustup component add llvm-tools-preview
+
+cargo bootimage
 ```
