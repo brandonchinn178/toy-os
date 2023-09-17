@@ -13,5 +13,7 @@ rustup component add rust-src --toolchain nightly-aarch64-apple-darwin
 cargo install bootimage
 rustup component add llvm-tools-preview
 
-cargo bootimage
+brew install qemu
+
+cargo run
 ```
