@@ -22,6 +22,7 @@ pub enum InterruptIndex {
     DivideError = 0,
     // 32 - 39: PIC 1 (Primary)
     Timer = PIC_1_OFFSET,
+    Keyboard,
     // 40 - 47: PIC 2 (Secondary)
     RealTimeClock = PIC_2_OFFSET,
 }
@@ -46,6 +47,7 @@ pub struct IDTDefinition {
     pub breakpoint: IDTEntryDefinition<HandlerFunc>,
     pub double_fault: IDTEntryDefinition<DivergingHandlerFuncWithErrCode>,
     pub timer: IDTEntryDefinition<HandlerFunc>,
+    pub keyboard: IDTEntryDefinition<HandlerFunc>,
 }
 
 pub struct IDTEntryDefinition<F> {
@@ -59,6 +61,7 @@ impl IDTDefinition {
         self.init_idt_handler(&mut idt.breakpoint, &self.breakpoint);
         self.init_idt_handler(&mut idt.double_fault, &self.double_fault);
         self.init_idt_handler(InterruptIndex::Timer.from_idt(&mut idt), &self.timer);
+        self.init_idt_handler(InterruptIndex::Keyboard.from_idt(&mut idt), &self.keyboard);
         idt
     }
 
@@ -88,6 +91,10 @@ impl Default for IDTDefinition {
             },
             timer: IDTEntryDefinition {
                 handler_fn: timer_interrupt_handler,
+                stack_index: None,
+            },
+            keyboard: IDTEntryDefinition {
+                handler_fn: keyboard_interrupt_handler,
                 stack_index: None,
             },
         }
@@ -165,4 +172,40 @@ extern "x86-interrupt" fn timer_interrupt_handler(
 ) {
     print!(".");
     unsafe { PICS.send_eoi(InterruptIndex::Timer) };
+}
+
+/***** Keyboard *****/
+
+use pc_keyboard::{layouts, HandleControl, Keyboard, ScancodeSet1};
+
+lazy_static! {
+    static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
+        Mutex::new(
+            Keyboard::new(
+                layouts::Us104Key,
+                ScancodeSet1,
+                HandleControl::Ignore,
+            ),
+        );
+}
+
+extern "x86-interrupt" fn keyboard_interrupt_handler(
+    _stack_frame: InterruptStackFrame
+) {
+    use crate::ports;
+    use pc_keyboard::DecodedKey;
+
+    let mut keyboard = KEYBOARD.lock();
+
+    let scancode = unsafe { ports::PS2.get_port().read() };
+    if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
+        if let Some(key) = keyboard.process_keyevent(key_event) {
+            match key {
+                DecodedKey::Unicode(character) => print!("{}", character),
+                DecodedKey::RawKey(key) => print!("{:?}", key),
+            }
+        }
+    }
+
+    unsafe { PICS.send_eoi(InterruptIndex::Keyboard) };
 }

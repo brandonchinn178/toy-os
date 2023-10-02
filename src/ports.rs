@@ -18,3 +18,6 @@ impl<T> PortDefinition<T> {
 
 // port must match isa-debug-exit configuration in Cargo.toml
 pub const ISA_DEBUG_EXIT: PortDefinition<u32> = PortDefinition::new(0xf4);
+
+// https://wiki.osdev.org/%228042%22_PS/2_Controller#PS.2F2_Controller_IO_Ports
+pub const PS2: PortDefinition<u8> = PortDefinition::new(0x60);
